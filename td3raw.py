@@ -72,36 +72,37 @@ class Critic(nn.Module):
 
 
 class TD3Agent:
-    def __init__(self, obs_dim, act_dim, act_limit, cfg: TD3Config, device):
+    def __init__(self, obs_dim, act_dim, act_limit, cfg: TD3Config, device, num_critics=2, selecting_function="min"):
         self.cfg = cfg
         self.device = device
         self.act_limit = act_limit
+        self.num_critics = num_critics
+        self.selecting_function = selecting_function
 
         self.actor = Actor(obs_dim, act_dim, cfg.hidden_dim, act_limit).to(device)
         self.actor_target = copy.deepcopy(self.actor)
 
-        self.q1 = Critic(obs_dim, act_dim, cfg.hidden_dim).to(device)
-        self.q2 = Critic(obs_dim, act_dim, cfg.hidden_dim).to(device)
-        self.q1_target = copy.deepcopy(self.q1)
-        self.q2_target = copy.deepcopy(self.q2)
+        self.q_networks = []
+        self.q_targets = []
+        for _ in range(self.num_critics):
+            q = Critic(obs_dim, act_dim, cfg.hidden_dim).to(device)
+            self.q_networks.append(q)
+            q_target = copy.deepcopy(q)
+            self.q_targets.append(q_target)
 
         self.actor_opt = torch.optim.Adam(self.actor.parameters(), lr=cfg.actor_lr)
-        self.q1_opt = torch.optim.Adam(self.q1.parameters(), lr=cfg.critic_lr)
-        self.q2_opt = torch.optim.Adam(self.q2.parameters(), lr=cfg.critic_lr)
+        self.q_opts = [torch.optim.Adam(q.parameters(), lr=cfg.critic_lr) for q in self.q_networks]
 
         self.total_updates = 0
 
     def save(self, path):
         torch.save({
             "actor": self.actor.state_dict(),
-            "q1": self.q1.state_dict(),
-            "q2": self.q2.state_dict(),
+            "q_networks": [q.state_dict() for q in self.q_networks],
             "actor_target": self.actor_target.state_dict(),
-            "q1_target": self.q1_target.state_dict(),
-            "q2_target": self.q2_target.state_dict(),
+            "q_targets": [q_target.state_dict() for q_target in self.q_targets],
             "actor_opt": self.actor_opt.state_dict(),
-            "q1_opt": self.q1_opt.state_dict(),
-            "q2_opt": self.q2_opt.state_dict(),
+            "q_opts": [q_opt.state_dict() for q_opt in self.q_opts],
             "total_updates": self.total_updates,
         }, path)
     
@@ -110,16 +111,16 @@ class TD3Agent:
         checkpoint = torch.load(path, map_location=self.device)
 
         self.actor.load_state_dict(checkpoint["actor"])
-        self.q1.load_state_dict(checkpoint["q1"])
-        self.q2.load_state_dict(checkpoint["q2"])
+        for i, q in enumerate(self.q_networks):
+            q.load_state_dict(checkpoint["q_networks"][i])
 
         self.actor_target.load_state_dict(checkpoint["actor_target"])
-        self.q1_target.load_state_dict(checkpoint["q1_target"])
-        self.q2_target.load_state_dict(checkpoint["q2_target"])
+        for i, q_target in enumerate(self.q_targets):
+            q_target.load_state_dict(checkpoint["q_targets"][i])
 
         self.actor_opt.load_state_dict(checkpoint["actor_opt"])
-        self.q1_opt.load_state_dict(checkpoint["q1_opt"])
-        self.q2_opt.load_state_dict(checkpoint["q2_opt"])
+        for i, q_opt in enumerate(self.q_opts):
+            q_opt.load_state_dict(checkpoint["q_opts"][i])
 
         self.total_updates = checkpoint["total_updates"]
 
@@ -145,30 +146,38 @@ class TD3Agent:
             next_act = self.actor_target(next_obs) + noise
             next_act = torch.clamp(next_act, -self.act_limit, self.act_limit)
 
-            target_q1 = self.q1_target(next_obs, next_act)
-            target_q2 = self.q2_target(next_obs, next_act)
-            target_q = torch.min(target_q1, target_q2)
+            target_qs = []
+            for q_target in self.q_targets:
+                target_qs.append(q_target(next_obs, next_act))
+            if self.selecting_function == "min":
+                target_q = torch.min(torch.stack(target_qs), dim=0)[0]
+            elif self.selecting_function == "median":
+                target_q = torch.median(torch.stack(target_qs), dim=0)[0]
             backup = rews + self.cfg.gamma * (1.0 - done) * target_q
 
-        q1_loss = F.mse_loss(self.q1(obs, acts), backup)
-        q2_loss = F.mse_loss(self.q2(obs, acts), backup)
+        q_losses = []
+        for q, q_opt in zip(self.q_networks, self.q_opts):
+            q_loss = F.mse_loss(q(obs, acts), backup)
+            q_losses.append(q_loss)
 
-        self.q1_opt.zero_grad()
-        q1_loss.backward()
-        self.q1_opt.step()
-
-        self.q2_opt.zero_grad()
-        q2_loss.backward()
-        self.q2_opt.step()
+        for q_loss, q_opt in zip(q_losses, self.q_opts):
+            q_opt.zero_grad()
+            q_loss.backward()
+        for q_opt in self.q_opts: # Should we step after all backward() calls to avoid potential issues with shared parameters?
+            q_opt.step()
 
         info = {
-            "q1_loss": q1_loss.item(),
-            "q2_loss": q2_loss.item(),
+            "q_losses": [q_loss.item() for q_loss in q_losses],
         }
 
-        if self.total_updates % self.cfg.policy_delay == 0:
-            actor_loss = -self.q1(obs, self.actor(obs)).mean()
-
+        if self.total_updates % self.cfg.policy_delay == 0: # Delayed policy updates
+            if self.selecting_function == "min":
+                # Use the minimum Q-value from the critics to update the actor, as per TD3's policy update rule
+                actor_loss = -torch.min(torch.stack([q(obs, self.actor(obs)) for q in self.q_networks]), dim=0)[0].mean()
+            elif self.selecting_function == "median":
+                # Use the median Q-value from the critics to update the actor, as per TD3's policy update rule
+                actor_loss = -torch.median(torch.stack([q(obs, self.actor(obs)) for q in self.q_networks]), dim=0)[0].mean()
+            
             self.actor_opt.zero_grad()
             actor_loss.backward()
             self.actor_opt.step()
@@ -178,13 +187,10 @@ class TD3Agent:
                     p_targ.data.mul_(1 - self.cfg.tau)
                     p_targ.data.add_(self.cfg.tau * p.data)
 
-                for p, p_targ in zip(self.q1.parameters(), self.q1_target.parameters()):
-                    p_targ.data.mul_(1 - self.cfg.tau)
-                    p_targ.data.add_(self.cfg.tau * p.data)
-
-                for p, p_targ in zip(self.q2.parameters(), self.q2_target.parameters()):
-                    p_targ.data.mul_(1 - self.cfg.tau)
-                    p_targ.data.add_(self.cfg.tau * p.data)
+                for q, q_target in zip(self.q_networks, self.q_targets):
+                    for p, p_targ in zip(q.parameters(), q_target.parameters()):
+                        p_targ.data.mul_(1 - self.cfg.tau)
+                        p_targ.data.add_(self.cfg.tau * p.data)
 
             info["actor_loss"] = actor_loss.item()
 
@@ -192,8 +198,6 @@ class TD3Agent:
         return info
     
     
-
-
 @torch.no_grad()
 def evaluate(agent, env_id, seed, episodes, device):
     env = gym.make(env_id)

@@ -5,9 +5,9 @@ from dataclasses import dataclass
 class TD3Config:
     env_id: str = "Walker2d-v5"
     seed: int = 0
-    total_steps: int = 1_000_000
+    total_steps: int = 100_000
 
-    buffer_size: int = 1_000_000
+    buffer_size: int = 100_000
     batch_size: int = 256
 
     gamma: float = 0.99
