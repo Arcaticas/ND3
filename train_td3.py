@@ -1,8 +1,10 @@
 import random
+import csv
 import numpy as np
 import torch
 import gymnasium as gym
 import os
+from datetime import datetime
 
 from config import TD3Config
 from td3raw import TD3Agent, ReplayBuffer, evaluate
@@ -27,42 +29,68 @@ def train(cfg: TD3Config, num_qs: int = 2, selecting_function: str = "min"):
     agent = TD3Agent(obs_dim, act_dim, act_limit, cfg, device, num_qs, selecting_function)
     replay = ReplayBuffer(obs_dim, act_dim, cfg.buffer_size)
 
+    os.makedirs("logs", exist_ok=True)
+    env_tag = cfg.env_id.replace("-", "_").replace("/", "_")
+    run_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    metrics_path = os.path.join(
+        "logs",
+        f"td3_{env_tag}_q{num_qs}_{selecting_function}_seed{cfg.seed}_{run_stamp}.csv",
+    )
+
     episode_return = 0.0
     episode_len = 0
 
-    for t in range(cfg.total_steps):
-        if t < cfg.start_steps:
-            act = env.action_space.sample()
-        else:
-            act = agent.act(obs, noise_scale=cfg.exploration_noise)
+    with open(metrics_path, "w", newline="") as metrics_file: # Open a CSV file to log evaluation metrics during training
+        metrics_writer = csv.DictWriter(
+            metrics_file,
+            fieldnames=[
+                "step",
+                "eval_return",
+            ],
+        )
+        metrics_writer.writeheader()
 
-        next_obs, rew, terminated, truncated, _ = env.step(act)
-        done = terminated or truncated
+        for t in range(cfg.total_steps):
+            if t < cfg.start_steps:
+                act = env.action_space.sample()
+            else:
+                act = agent.act(obs, noise_scale=cfg.exploration_noise)
 
-        replay.add(obs, act, rew, next_obs, float(done))
+            next_obs, rew, terminated, truncated, _ = env.step(act)
+            done = terminated or truncated
 
-        obs = next_obs
-        episode_return += rew
-        episode_len += 1
+            replay.add(obs, act, rew, next_obs, float(done))
 
-        if done:
-            print(f"train episode return={episode_return:.2f} len={episode_len}")
-            obs, _ = env.reset()
-            episode_return = 0.0
-            episode_len = 0
+            obs = next_obs
+            episode_return += rew
+            episode_len += 1
 
-        if t >= cfg.update_after and replay.size >= cfg.batch_size:
-            for _ in range(cfg.update_every):
-                batch = replay.sample(cfg.batch_size, device)
-                agent.update(batch)
+            if done:
+                print(f"train episode return={episode_return:.2f} len={episode_len}")
+                obs, _ = env.reset()
+                episode_return = 0.0
+                episode_len = 0
 
-        if (t + 1) % cfg.eval_interval == 0:
-            avg_ret = evaluate(agent, cfg.env_id, cfg.seed, cfg.eval_episodes, device)
-            print(f"step={t+1} eval_return={avg_ret:.2f}")
+            if t >= cfg.update_after and replay.size >= cfg.batch_size: # Start updates after we've collected some data and have enough for a batch
+                for _ in range(cfg.update_every):
+                    batch = replay.sample(cfg.batch_size, device)
+                    agent.update(batch)
+
+            if (t + 1) % cfg.eval_interval == 0: # Evaluate the agent every eval_interval steps during training to track progress
+                avg_ret = evaluate(agent, cfg.env_id, cfg.seed, cfg.eval_episodes, device)
+                print(f"step={t+1} eval_return={avg_ret:.2f}")
+                metrics_writer.writerow(
+                    {
+                        "step": t + 1,
+                        "eval_return": avg_ret,
+                    }
+                )
+                metrics_file.flush()
 
     os.makedirs("checkpoints", exist_ok=True)
     agent.save("checkpoints/td3_walker2d.pt")
     print("Saved checkpoint to checkpoints/td3_walker2d.pt")
+    print(f"Saved eval metrics to {metrics_path}")
 
     env.close()
 

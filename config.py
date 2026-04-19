@@ -5,9 +5,9 @@ from dataclasses import dataclass
 class TD3Config:
     env_id: str = "Walker2d-v5"
     seed: int = 0
-    total_steps: int = 100_000
+    total_steps: int = 500_000
 
-    buffer_size: int = 100_000
+    buffer_size: int = 500_000
     batch_size: int = 256
 
     gamma: float = 0.99
@@ -26,5 +26,5 @@ class TD3Config:
     policy_delay: int = 2
     exploration_noise: float = 0.1
 
-    eval_episodes: int = 5
-    eval_interval: int = 10_000
+    eval_episodes: int = 5 # Number of episodes to average over during evaluation
+    eval_interval: int = 10_000 # Evaluate the agent every eval_interval steps during training to track progress

@@ -199,7 +199,7 @@ class TD3Agent:
     
     
 @torch.no_grad()
-def evaluate(agent, env_id, seed, episodes, device):
+def evaluate(agent, env_id, seed, episodes, device): # Evaluate average performance over "episode" amount of episodes, using the current policy without exploration noise. This is typically done every few thousand steps during training to track progress.
     env = gym.make(env_id)
     returns = []
     for ep in range(episodes):
