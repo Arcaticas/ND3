@@ -7,6 +7,7 @@ Minimal implementation of **Twin Delayed DDPG (TD3)** for continuous control on 
 - `train_td3.py`: Main training loop, periodic evaluation, checkpoint saving.
 - `play_td3.py`: Loads a trained checkpoint and runs evaluation episodes with rendering.
 - `td3raw.py`: TD3 components (actor/critic networks, replay buffer, update logic, checkpoint I/O).
+- `plot_learning_curves.py`: Builds learning-curve plots from per-run CSV logs.
 - `config.py`: Centralized hyperparameter dataclass (`TD3Config`).
 - `sanity.py`: Quick environment sanity test for `Walker2d-v5`.
 - `environment.yml`: Conda environment definition.
@@ -50,14 +51,48 @@ python train_td3.py
 What training does:
 
 - Uses defaults from `TD3Config` in `config.py`.
-- Trains on `Walker2d-v5` for `1_000_000` steps by default.
+- Trains on `Walker2d-v5` for `1_000_000` environment steps by default.
 - Prints training episode return/length.
 - Runs periodic evaluation every `eval_interval` steps.
+- Writes one CSV per run in `logs/` with columns: `step`, `eval_return`.
 - Saves checkpoint to:
 
 ```text
 checkpoints/td3_walker2d.pt
 ```
+
+CSV filenames include environment, number of critics, aggregation mode, seed, and timestamp:
+
+```text
+logs/td3_<env>_q<num_qs>_<selecting_function>_seed<seed>_<yyyymmdd_hhmmss>.csv
+```
+
+Example:
+
+```text
+logs/td3_Walker2d_v5_q5_min_seed0_20260419_173002.csv
+```
+
+## Plot Learning Curves
+
+Generate plots from CSV logs:
+
+```bash
+python plot_learning_curves.py
+```
+
+Optional output/log directories:
+
+```bash
+python plot_learning_curves.py --log-dir logs --output-dir plots
+```
+
+Plot behavior:
+
+- Creates one plot per environment.
+- Uses labels in the form `q<num_qs>_<selecting_function>`.
+- If multiple seeds exist for the same label, plots the mean curve with a shaded ±1 std band.
+- Uses environment steps on the x-axis and evaluation return on the y-axis.
 
 ## Run a Trained Policy
 

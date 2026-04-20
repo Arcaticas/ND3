@@ -14,7 +14,7 @@ def set_seed(seed: int):
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-def train(cfg: TD3Config, num_qs: int = 2, selecting_function: str = "min"):
+def train(cfg: TD3Config, num_qs: int = 2, aggregation_function: str = "min"):
     set_seed(cfg.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -26,7 +26,7 @@ def train(cfg: TD3Config, num_qs: int = 2, selecting_function: str = "min"):
     act_dim = env.action_space.shape[0]
     act_limit = float(env.action_space.high[0])
 
-    agent = TD3Agent(obs_dim, act_dim, act_limit, cfg, device, num_qs, selecting_function)
+    agent = TD3Agent(obs_dim, act_dim, act_limit, cfg, device, num_qs, aggregation_function)
     replay = ReplayBuffer(obs_dim, act_dim, cfg.buffer_size)
 
     os.makedirs("logs", exist_ok=True)
@@ -34,7 +34,7 @@ def train(cfg: TD3Config, num_qs: int = 2, selecting_function: str = "min"):
     run_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     metrics_path = os.path.join(
         "logs",
-        f"td3_{env_tag}_q{num_qs}_{selecting_function}_seed{cfg.seed}_{run_stamp}.csv",
+        f"td3_{env_tag}_q{num_qs}_{aggregation_function}_seed{cfg.seed}_{run_stamp}.csv",
     )
 
     episode_return = 0.0
@@ -97,5 +97,4 @@ def train(cfg: TD3Config, num_qs: int = 2, selecting_function: str = "min"):
 
 if __name__ == "__main__":
     cfg = TD3Config()
-    # train(cfg, num_qs=2, selecting_function="min") # num_qs is the number of Q-networks used. TD3 typically uses 2, but you can experiment with more for potentially better performance at the cost of increased computation.
-    train(cfg, num_qs=3, selecting_function="median") # selecting_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
+    train(cfg, num_qs=5, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.

@@ -72,12 +72,12 @@ class Critic(nn.Module):
 
 
 class TD3Agent:
-    def __init__(self, obs_dim, act_dim, act_limit, cfg: TD3Config, device, num_critics=2, selecting_function="min"):
+    def __init__(self, obs_dim, act_dim, act_limit, cfg: TD3Config, device, num_critics=2, aggregation_function="min"):
         self.cfg = cfg
         self.device = device
         self.act_limit = act_limit
         self.num_critics = num_critics
-        self.selecting_function = selecting_function
+        self.aggregation_function = aggregation_function
 
         self.actor = Actor(obs_dim, act_dim, cfg.hidden_dim, act_limit).to(device)
         self.actor_target = copy.deepcopy(self.actor)
@@ -149,9 +149,9 @@ class TD3Agent:
             target_qs = []
             for q_target in self.q_targets:
                 target_qs.append(q_target(next_obs, next_act))
-            if self.selecting_function == "min":
+            if self.aggregation_function == "min":
                 target_q = torch.min(torch.stack(target_qs), dim=0)[0]
-            elif self.selecting_function == "median":
+            elif self.aggregation_function == "median":
                 target_q = torch.median(torch.stack(target_qs), dim=0)[0]
             backup = rews + self.cfg.gamma * (1.0 - done) * target_q
 
@@ -171,10 +171,10 @@ class TD3Agent:
         }
 
         if self.total_updates % self.cfg.policy_delay == 0: # Delayed policy updates
-            if self.selecting_function == "min":
+            if self.aggregation_function == "min":
                 # Use the minimum Q-value from the critics to update the actor, as per TD3's policy update rule
                 actor_loss = -torch.min(torch.stack([q(obs, self.actor(obs)) for q in self.q_networks]), dim=0)[0].mean()
-            elif self.selecting_function == "median":
+            elif self.aggregation_function == "median":
                 # Use the median Q-value from the critics to update the actor, as per TD3's policy update rule
                 actor_loss = -torch.median(torch.stack([q(obs, self.actor(obs)) for q in self.q_networks]), dim=0)[0].mean()
             
