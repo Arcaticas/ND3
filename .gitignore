@@ -14,8 +14,8 @@ checkpoints/
 *.pth
 
 # Logs
-logs/
-*.log
+# logs/
+# *.log
 
 # OS junk
 .DS_Store
