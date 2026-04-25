@@ -104,4 +104,5 @@ if __name__ == "__main__":
 
     # Prevent system sleep while running the script
     with keep.running():
-        train(cfg, num_qs=2, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
+        train(cfg, num_qs=4, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
+        train(cfg, num_qs=5, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.

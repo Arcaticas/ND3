@@ -1,4 +1,4 @@
-name: nd3-env
+name: nd3-env 
 channels:
   - pytorch
   - conda-forge
@@ -16,3 +16,4 @@ dependencies:
       - imageio
       - imageio-ffmpeg
       - tqdm
+      - wakepy
