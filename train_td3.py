@@ -88,8 +88,9 @@ def train(cfg: TD3Config, num_qs: int = 2, aggregation_function: str = "min"):
                 metrics_file.flush()
 
     os.makedirs("checkpoints", exist_ok=True)
-    agent.save("checkpoints/td3_walker2d.pt")
-    print("Saved checkpoint to checkpoints/td3_walker2d.pt")
+    checkpoint_file = f"checkpoints/nd3_{cfg.env_id}_q{num_qs}_{aggregation_function}_seed{cfg.seed}_{run_stamp}.pt"
+    agent.save(checkpoint_file)
+    print(f"Saved checkpoint to {checkpoint_file}")
     print(f"Saved eval metrics to {metrics_path}")
 
     env.close()
@@ -97,4 +98,5 @@ def train(cfg: TD3Config, num_qs: int = 2, aggregation_function: str = "min"):
 
 if __name__ == "__main__":
     cfg = TD3Config()
-    train(cfg, num_qs=5, aggregation_function="median") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
+    cfg.env_id = "Hopper-v5" # Change environment
+    train(cfg, num_qs=1, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.

@@ -1,4 +1,4 @@
-name: td3-walker2d
+name: nd3-env
 channels:
   - pytorch
   - conda-forge
