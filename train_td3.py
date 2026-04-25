@@ -5,6 +5,7 @@ import torch
 import gymnasium as gym
 import os
 from datetime import datetime
+from wakepy import keep
 
 from config import TD3Config
 from td3raw import TD3Agent, ReplayBuffer, evaluate
@@ -100,4 +101,7 @@ if __name__ == "__main__":
     cfg = TD3Config()
     # cfg.env_id = "HalfCheetah-v5" # Change environment
     cfg.env_id = "Hopper-v5" # Change environment
-    train(cfg, num_qs=1, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
+
+    # Prevent system sleep while running the script
+    with keep.running():
+        train(cfg, num_qs=2, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
