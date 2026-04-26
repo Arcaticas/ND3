@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 
 FILENAME_PATTERN = re.compile(
-    r"^td3_(?P<env>.+?)_q(?P<num_qs>\d+)_(?P<selecting_function>[A-Za-z0-9_]+)_seed(?P<seed>-?\d+)_(?P<stamp>\d{8}_\d{6})\.csv$"
+    r"^nd3_(?P<env>.+?)_q(?P<num_qs>\d+)_(?P<selecting_function>[A-Za-z0-9_]+)_seed(?P<seed>-?\d+)_(?P<stamp>\d{8}_\d{6})\.csv$"
 )
 
 
@@ -84,7 +84,7 @@ def make_plots(grouped_runs, output_dir):
     os.makedirs(output_dir, exist_ok=True)
 
     if not grouped_runs:
-        print("No matching CSV files found. Expected names like td3_<env>_q<num>_<selector>_seed<seed>_<timestamp>.csv")
+        print("No matching CSV files found. Expected names like nd3_<env>_q<num>_<selector>_seed<seed>_<timestamp>.csv")
         return
 
     for env, label_runs in grouped_runs.items():
@@ -117,7 +117,7 @@ def make_plots(grouped_runs, output_dir):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Plot TD3 learning curves from per-run CSV logs."
+        description="Plot ND3 learning curves from per-run CSV logs."
     )
     parser.add_argument(
         "--log-dir",
