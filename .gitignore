@@ -9,9 +9,9 @@ conda-env/
 env/
 
 # Checkpoints / models
-checkpoints/
-*.pt
-*.pth
+# checkpoints/
+# *.pt
+# *.pth
 
 # Logs
 # logs/

@@ -1,4 +1,4 @@
-name: nd3-env
+name: nd3-env 
 channels:
   - pytorch
   - nvidia # for CUDA packages
@@ -19,3 +19,4 @@ dependencies:
       - imageio
       - imageio-ffmpeg
       - tqdm
+      - wakepy
