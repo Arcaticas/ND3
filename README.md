@@ -19,7 +19,7 @@ Minimal implementation of **Twin Delayed DDPG (TD3)** for continuous control on 
 
 ```bash
 conda env create -f environment.yml
-conda activate td3-walker2d
+conda activate nd3-env
 ```
 
 ### 2. Optional fallback install (if dependency resolution breaks)

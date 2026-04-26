@@ -1,6 +1,7 @@
 name: nd3-env
 channels:
   - pytorch
+  - nvidia # for CUDA packages
   - conda-forge
 dependencies:
   - python=3.10
@@ -9,7 +10,9 @@ dependencies:
   - pytorch
   - torchvision
   - torchaudio
-  - cpuonly  # remove this line if you want GPU (see below)
+  - pytorch-cuda=12.1  # use this line if you want CPU
+  # - cpuonly  # use this line if you want GPU
+
   - pip:
       - gymnasium[mujoco]
       - mujoco
