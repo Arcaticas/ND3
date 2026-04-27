@@ -35,7 +35,7 @@ def train(cfg: TD3Config, num_qs: int = 2, aggregation_function: str = "min"):
     run_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     metrics_path = os.path.join(
         "logs",
-        f"td3_{env_tag}_q{num_qs}_{aggregation_function}_seed{cfg.seed}_{run_stamp}.csv",
+        f"nd3_{env_tag}_q{num_qs}_{aggregation_function}_seed{cfg.seed}_{run_stamp}.csv",
     )
 
     episode_return = 0.0
