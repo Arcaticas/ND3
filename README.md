@@ -6,6 +6,7 @@ Minimal implementation of **Twin Delayed DDPG (TD3)** for continuous control on 
 
 - `train_td3.py`: Main training loop, periodic evaluation, checkpoint saving.
 - `play_td3.py`: Loads a trained checkpoint and runs evaluation episodes with rendering.
+- `analyze_q_bias.py`: Compares critic Q estimates with realized discounted returns to inspect over/underestimation.
 - `td3raw.py`: TD3 components (actor/critic networks, replay buffer, update logic, checkpoint I/O).
 - `plot_learning_curves.py`: Builds learning-curve plots from per-run CSV logs.
 - `config.py`: Centralized hyperparameter dataclass (`TD3Config`).
@@ -97,16 +98,30 @@ Plot behavior:
 ## Run a Trained Policy
 
 ```bash
-python play_td3.py
+python play_td3.py --checkpoint checkpoints/nd3_Hopper-v5_q5_min_seed0_20260425_185049.pt --episodes 3
 ```
 
-By default this loads:
+Environment and number of critics are inferred from the checkpoint filename when possible.
+
+## Analyze Q Over/Underestimation
+
+```bash
+python analyze_q_bias.py --checkpoint checkpoints/nd3_Hopper-v5_q5_min_seed0_20260425_185049.pt --episodes 10
+```
+
+Optional detailed CSV export:
+
+```bash
+python analyze_q_bias.py --checkpoint nd3_Hopper-v5_q5_min_seed0_20260425_185049.pt --episodes 10 --output-csv logs/q_bias_hopper_q5.csv
+```
+
+The script prints bias statistics where:
 
 ```text
-checkpoints/td3_walker2d.pt
+bias = predicted Q(s, a) - realized discounted return-to-go
 ```
 
-and runs 3 rendered episodes.
+Positive mean bias indicates overestimation, negative mean bias indicates underestimation.
 
 ## Key Hyperparameters
 
