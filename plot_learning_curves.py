@@ -46,7 +46,11 @@ def collect_runs(log_dir):
 
         metadata = match.groupdict()
         env = metadata["env"]
-        label = f"{metadata['num_qs']} critics - {metadata['aggregation_function']} aggregation"
+        if metadata["num_qs"] in {"1", "2"}:
+            # For 1 or 2 critics, the aggregation function is not relevant, so we can ignore it in the label
+            label = f"{metadata['num_qs']} critics"
+        else:
+            label = f"{metadata['num_qs']} critics - {metadata['aggregation_function']} aggregation"
         seed = metadata["seed"]
 
         csv_path = os.path.join(log_dir, name)
@@ -58,6 +62,7 @@ def collect_runs(log_dir):
                 "aggregation": metadata["aggregation_function"],
                 "steps": steps,
                 "values": values,
+                "num_qs": int(metadata["num_qs"]),
             }
         )
 
@@ -113,8 +118,10 @@ def make_plots(grouped_runs, output_dir, aggregation_filter=None):
 
         for label in sorted(label_runs.keys()):
             aggregation = label_runs[label][0]["aggregation"]
-            if aggregation_filter is not None and aggregation not in aggregation_filter:
-                continue
+
+            if label_runs[label][0]["num_qs"] > 2: # Check for runs with only 1 or 2 critics since the aggregation function is not relevant for those cases
+                if aggregation_filter is not None and aggregation not in aggregation_filter: # Apply aggregation filter if specified, but only for runs with more than 2 critics
+                    continue
 
             runs = label_runs[label]
             steps, means, stds = aggregate_by_step(runs)
@@ -131,7 +138,7 @@ def make_plots(grouped_runs, output_dir, aggregation_filter=None):
             continue
 
         env_name = env.replace("_", "-")
-        plt.title(env_name)
+        plt.title(f"{env_name} Learning Curves - {','.join(aggregation_filter) if aggregation_filter else 'all'} aggregation functions")
         plt.xlabel("Environment Steps")
         plt.ylabel("Evaluation Return")
         plt.legend(title="Configuration")
