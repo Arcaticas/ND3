@@ -7,6 +7,7 @@ Minimal implementation of **Twin Delayed DDPG (TD3)** for continuous control on 
 - `train_td3.py`: Main training loop, periodic evaluation, checkpoint saving.
 - `play_td3.py`: Loads a trained checkpoint and runs evaluation episodes with rendering.
 - `analyze_q_bias.py`: Compares critic Q estimates with realized discounted returns to inspect over/underestimation.
+- `plot_q_bias_vs_critics.py`: Builds one plot per environment showing mean Q bias versus critic count for min and median checkpoints.
 - `td3raw.py`: TD3 components (actor/critic networks, replay buffer, update logic, checkpoint I/O).
 - `plot_learning_curves.py`: Builds learning-curve plots from per-run CSV logs.
 - `config.py`: Centralized hyperparameter dataclass (`TD3Config`).
@@ -130,6 +131,20 @@ bias = predicted Q(s, a) - realized discounted return-to-go
 ```
 
 Positive mean bias indicates overestimation, negative mean bias indicates underestimation.
+
+## Plot Mean Bias vs Critic Count
+
+Generate one plot per environment with two lines: min checkpoints and median checkpoints.
+
+```bash
+python plot_q_bias_vs_critics.py --checkpoints-dir checkpoints --output-dir plots --episodes 10
+```
+
+Notes:
+
+- For 1-critic and 2-critic checkpoints, the min and median targets are identical, so both lines share the same points.
+- If multiple seeds are present for the same environment / critic count / aggregation, the script averages their mean-bias values before plotting.
+- The y-axis is the primary aggregation's mean bias, defined as predicted Q minus realized return-to-go.
 
 ## Key Hyperparameters
 

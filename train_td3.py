@@ -98,11 +98,15 @@ def train(cfg: TD3Config, num_qs: int = 2, aggregation_function: str = "min"):
 
 
 if __name__ == "__main__":
-    cfg = TD3Config()
+    cfg = TD3Config() # Uses walker as default environment, but can be changed by setting the env_id attribute. For example:
     # cfg.env_id = "HalfCheetah-v5" # Change environment
-    cfg.env_id = "Hopper-v5" # Change environment
+    # cfg.env_id = "Hopper-v5" # Change environment
 
+    # change the seef
+    cfg.seed = 1 # Change random seed for reproducibility
     # Prevent system sleep while running the script
     with keep.running():
-        train(cfg, num_qs=4, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
-        train(cfg, num_qs=5, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
+        train(cfg, num_qs=1, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
+        train(cfg, num_qs=2, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
+        train(cfg, num_qs=3, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
+        

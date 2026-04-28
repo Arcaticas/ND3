@@ -138,7 +138,7 @@ def make_plots(grouped_runs, output_dir, aggregation_filter=None):
             continue
 
         env_name = env.replace("_", "-")
-        plt.title(f"{env_name} Learning Curves - {','.join(aggregation_filter) if aggregation_filter else 'all'} aggregation functions")
+        plt.title(f"{env_name} Learning Curves - {','.join(aggregation_filter) if aggregation_filter else 'all'} aggregation function")
         plt.xlabel("Environment Steps")
         plt.ylabel("Evaluation Return")
         plt.legend(title="Configuration")
