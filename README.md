@@ -88,12 +88,20 @@ Optional output/log directories:
 python plot_learning_curves.py --log-dir logs --output-dir plots
 ```
 
+To plot only one aggregation family and reduce visual clutter:
+
+```bash
+python plot_learning_curves.py --aggregation median
+python plot_learning_curves.py --aggregation min
+```
+
 Plot behavior:
 
 - Creates one plot per environment.
 - Uses labels in the form `q<num_qs>_<selecting_function>`.
 - If multiple seeds exist for the same label, plots the mean curve with a shaded ±1 std band.
 - Uses environment steps on the x-axis and evaluation return on the y-axis.
+- Use `--aggregation` to limit plots to `min`, `median`, or both via `min,median`.
 
 ## Run a Trained Policy
 

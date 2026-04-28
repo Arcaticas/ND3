@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 
 FILENAME_PATTERN = re.compile(
-    r"^nd3_(?P<env>.+?)_q(?P<num_qs>\d+)_(?P<selecting_function>[A-Za-z0-9_]+)_seed(?P<seed>-?\d+)_(?P<stamp>\d{8}_\d{6})\.csv$"
+    r"^nd3_(?P<env>.+?)_q(?P<num_qs>\d+)_(?P<aggregation_function>[A-Za-z0-9_]+)_seed(?P<seed>-?\d+)_(?P<stamp>\d{8}_\d{6})\.csv$"
 )
 
 
@@ -46,7 +46,7 @@ def collect_runs(log_dir):
 
         metadata = match.groupdict()
         env = metadata["env"]
-        label = f"q{metadata['num_qs']}_{metadata['selecting_function']}"
+        label = f"{metadata['num_qs']} critics - {metadata['aggregation_function']} aggregation"
         seed = metadata["seed"]
 
         csv_path = os.path.join(log_dir, name)
@@ -55,12 +55,32 @@ def collect_runs(log_dir):
             {
                 "seed": seed,
                 "path": csv_path,
+                "aggregation": metadata["aggregation_function"],
                 "steps": steps,
                 "values": values,
             }
         )
 
     return grouped
+
+
+def parse_aggregation_filter(value):
+    if value == "all":
+        return None
+
+    selected = {item.strip() for item in value.split(",") if item.strip()}
+    if not selected:
+        raise argparse.ArgumentTypeError(
+            "Aggregation mode cannot be empty. Expected all, min, median, or a comma-separated combination like min,median"
+        )
+
+    valid = {"min", "median"}
+    invalid = sorted(selected - valid)
+    if invalid:
+        raise argparse.ArgumentTypeError(
+            f"Invalid aggregation mode(s): {', '.join(invalid)}. Expected one or more of: all, min, median"
+        )
+    return selected
 
 
 def aggregate_by_step(runs):
@@ -80,7 +100,7 @@ def aggregate_by_step(runs):
     return steps, means, stds
 
 
-def make_plots(grouped_runs, output_dir):
+def make_plots(grouped_runs, output_dir, aggregation_filter=None):
     os.makedirs(output_dir, exist_ok=True)
 
     if not grouped_runs:
@@ -89,16 +109,26 @@ def make_plots(grouped_runs, output_dir):
 
     for env, label_runs in grouped_runs.items():
         plt.figure(figsize=(10, 6))
+        plotted_any = False
 
         for label in sorted(label_runs.keys()):
+            aggregation = label_runs[label][0]["aggregation"]
+            if aggregation_filter is not None and aggregation not in aggregation_filter:
+                continue
+
             runs = label_runs[label]
             steps, means, stds = aggregate_by_step(runs)
             plt.plot(steps, means, label=label)
+            plotted_any = True
 
             if any(s > 0 for s in stds):
                 lower = [m - s for m, s in zip(means, stds)]
                 upper = [m + s for m, s in zip(means, stds)]
                 plt.fill_between(steps, lower, upper, alpha=0.2)
+
+        if not plotted_any:
+            plt.close()
+            continue
 
         env_name = env.replace("_", "-")
         plt.title(env_name)
@@ -108,7 +138,7 @@ def make_plots(grouped_runs, output_dir):
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
 
-        out_path = os.path.join(output_dir, f"{env}_learning_curves.png")
+        out_path = os.path.join(output_dir, f"{env}_learning_curves_{','.join(aggregation_filter) if aggregation_filter else 'all'}.png")
         plt.savefig(out_path, dpi=150)
         plt.close()
 
@@ -129,13 +159,23 @@ def parse_args():
         default="plots",
         help="Directory to save generated plot images (default: plots)",
     )
+    parser.add_argument(
+        "--aggregation",
+        default="all",
+        type=parse_aggregation_filter,
+        help=(
+            "Aggregation mode(s) to plot from the CSV filenames. "
+            "Use all, min, median, or a comma-separated combination like min,median. "
+            "Default: all"
+        ),
+    )
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
     grouped = collect_runs(args.log_dir)
-    make_plots(grouped, args.output_dir)
+    make_plots(grouped, args.output_dir, args.aggregation)
 
 
 if __name__ == "__main__":
