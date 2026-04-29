@@ -126,7 +126,7 @@ def main():
         plt.legend()
         plt.tight_layout()
 
-        out_path = os.path.join(args.output_dir, f"nd3_{env_name}_q_bias_vs_critics.png")
+        out_path = os.path.join(args.output_dir, f"{env_name}_q_bias_vs_critics.png")
         plt.savefig(out_path, dpi=150)
         plt.close()
         print(f"Saved plot: {out_path}")
