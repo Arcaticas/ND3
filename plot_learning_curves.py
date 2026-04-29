@@ -128,10 +128,10 @@ def make_plots(grouped_runs, output_dir, aggregation_filter=None):
             plt.plot(steps, means, label=label)
             plotted_any = True
 
-            if any(s > 0 for s in stds):
-                lower = [m - s for m, s in zip(means, stds)]
-                upper = [m + s for m, s in zip(means, stds)]
-                plt.fill_between(steps, lower, upper, alpha=0.2)
+            # if any(s > 0 for s in stds): # Only plot shaded area if there is some variability across runs
+            #     lower = [m - s for m, s in zip(means, stds)]
+            #     upper = [m + s for m, s in zip(means, stds)]
+            #     plt.fill_between(steps, lower, upper, alpha=0.2)
 
         if not plotted_any:
             plt.close()

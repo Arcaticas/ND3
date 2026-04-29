@@ -102,11 +102,8 @@ if __name__ == "__main__":
     # cfg.env_id = "HalfCheetah-v5" # Change environment
     # cfg.env_id = "Hopper-v5" # Change environment
 
-    # change the seef
+    # change the seed
     cfg.seed = 1 # Change random seed for reproducibility
     # Prevent system sleep while running the script
     with keep.running():
-        train(cfg, num_qs=1, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
-        train(cfg, num_qs=2, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
-        train(cfg, num_qs=3, aggregation_function="min") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
-        
+        train(cfg, num_qs=4, aggregation_function="median") # aggregation_function determines how the Q-values from multiple critics are combined to update the actor. "min" uses the minimum Q-value (standard TD3), while "median" uses the median Q-value, which can be more robust to outliers and may lead to better performance in some cases.
