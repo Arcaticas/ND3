@@ -69,6 +69,11 @@ CSV filenames include environment, number of critics, aggregation mode, seed, an
 logs/td3_<env>_q<num_qs>_<selecting_function>_seed<seed>_<yyyymmdd_hhmmss>.csv
 ```
 
+Notes:
+
+- The seed makes runs repeatable in practice, but this TD3 setup is not fully deterministic across every rerun.
+- Later episode resets, replay sampling, exploration noise, and CUDA behavior can all cause same-seed runs to diverge.
+
 Example:
 
 ```text
@@ -100,7 +105,8 @@ Plot behavior:
 
 - Creates one plot per environment.
 - Uses labels in the form `q<num_qs>_<selecting_function>`.
-- If multiple seeds exist for the same label, plots the mean curve with a shaded ±1 std band.
+- If multiple seeds exist for the same label, plots the mean curve.
+- If multiple CSVs match the same environment / critic-count / aggregation label, they are averaged together rather than deduplicated.
 - Uses environment steps on the x-axis and evaluation return on the y-axis.
 - Use `--aggregation` to limit plots to `min`, `median`, or both via `min,median`.
 
